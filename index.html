@@ -1,0 +1,70 @@
+<!doctype html>
+
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>patchbay - connect anything</title>
+  </head>
+
+  <body>
+    <input id='file_button' type='file'></input>
+    <div id='hosted_files'>
+      <h1>Hosted Files</h1>
+    </div>
+    <script type='module'>
+
+      import { createHoster } from './index.js';
+
+      (async () => {
+        const server = 'https://beta.patchbay.pub';
+        const rootChannel = '/test';
+        const hoster = createHoster(server, rootChannel);
+
+        const uploadButton = document.getElementById('file_button');
+        uploadButton.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) {
+            return;
+          }
+
+          const allUrls = [];
+
+          const path = '/' + file.name;
+          hoster.hostFile(file, path);
+          const filesEl = document.getElementById('hosted_files');
+          //const fullPath = hoster.getHostedPath(path);
+          //const portStr = hoster.getPortStr();
+          //const url = `${window.location.protocol}//${proxyAddress}${portStr}${fullPath}`;
+          const url = server + rootChannel + path;
+          if (allUrls.indexOf(url) === -1) {
+            allUrls.push(url);
+            const filesEl = document.getElementById('hosted_files');
+            const div = document.createElement('div');
+            div.style.fontSize = '22px';
+            div.style.fontWeight = 'bold';
+            div.innerHTML = `<a target='_blank' href=${url}>${url}</a>`;
+            filesEl.appendChild(div);
+          //  const samtoolsDiv = document.createElement('div');
+          //  samtoolsDiv.style.fontSize = '22px';
+          //  samtoolsDiv.style.fontWeight = 'bold';
+          //  samtoolsDiv.innerHTML = `samtools view -H ${url}`;
+          //  filesEl.appendChild(samtoolsDiv);
+          //  const rangedDiv = document.createElement('div');
+          //  rangedDiv.style.fontSize = '22px';
+          //  rangedDiv.style.fontWeight = 'bold';
+          //  rangedDiv.innerHTML = `samtools view ${url} chr18`;
+          //  filesEl.appendChild(rangedDiv);
+          //  const curlDiv = document.createElement('div');
+          //  curlDiv.style.fontSize = '22px';
+          //  curlDiv.style.fontWeight = 'bold';
+          //  //curlDiv.innerHTML = `curl -H "Range: bytes=1-6" ${url} > file.bam`;
+          //  curlDiv.innerHTML = `curl ${url} > file.bam`;
+          //  filesEl.appendChild(curlDiv);
+          }
+        });
+      })();
+
+    </script>
+  </body>
+</html>
