@@ -45,10 +45,9 @@ class Hoster {
         }
       }
 
-      const path = reqPath.slice(this.rootChannel.length);
-      console.log(reqMethod, reqPath, path, reqHeaders);
+      console.log(reqMethod, reqPath, reqHeaders);
 
-      let sendFile = this.files[path];
+      let sendFile = this.files[reqPath];
 
       const fileUrl = this.server + '/res/' + randChan;
       const resHeaders = {};
