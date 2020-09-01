@@ -1,25 +1,26 @@
-const requestPrefix = 'pb-req-';
-const responsePrefix = 'pb-res-';
-
 class Hoster {
   constructor(server, rootChannel) {
     this.server = server;
     this.rootChannel = rootChannel;
-  }
 
-  async hostFile(file, path) {
-    for (let i = 0; i < 4; i++) {
-      this.hostFileWorker(file, path, i);
+    this.files = {};
+
+    for (let i = 0; i < 1; i++) {
+      this.hostFileWorker(i);
     }
   }
 
-  async hostFileWorker(file, path, workerId) {
+  async hostFile(file, path) {
+    this.files[path] = file;
+  }
 
-    console.log(`Starting worker ${workerId} for ${path}`);
+  async hostFileWorker(workerId) {
+
+    console.log(`Starting worker ${workerId}`);
 
     while (true) {
 
-      const switchUrl = this.server + this.rootChannel + path + '?responder=true&switch=true';
+      const switchUrl = this.server + '/res' + this.rootChannel + '?switch=true';
       const randChan = randomChannelId();
 
       const response = await fetch(switchUrl, {
@@ -27,19 +28,44 @@ class Hoster {
         body: randChan,
       });
 
+      let reqMethod;
+      let reqPath;
+
       const reqHeaders = {};
       for (const entry of response.headers.entries()) {
         const headerName = entry[0];
-        if (headerName.startsWith(requestPrefix)) {
-          reqHeaders[headerName.slice(requestPrefix.length)] = entry[1];
+        if (headerName === 'pb-method') {
+          reqMethod = entry[1];
+        }
+        else if (headerName === 'pb-path') {
+          reqPath = entry[1];
+        }
+        else if (headerName.startsWith('pb-h-')) {
+          reqHeaders[headerName.slice('pb-h-'.length)] = entry[1];
         }
       }
 
-      console.log(reqHeaders);
+      const path = reqPath.slice(this.rootChannel.length);
+      console.log(reqMethod, reqPath, path, reqHeaders);
 
-      let sendFile = file;
+      let sendFile = this.files[path];
 
+      const fileUrl = this.server + '/res/' + randChan;
       const resHeaders = {};
+
+      if (!sendFile) {
+
+        resHeaders['Pb-Status'] = '404';
+
+        console.error("404");
+        await fetch(fileUrl, {
+          method: 'POST',
+          body: "Not found",
+          headers: resHeaders,
+        });
+
+        continue;
+      }
 
       // TODO: parse byte range specs properly according to
       // https://tools.ietf.org/html/rfc7233
@@ -56,20 +82,17 @@ class Hoster {
           range.end = Number(rangeParts[1]);
         }
 
-        console.log(range);
-
         const originalSize = sendFile.size;
 
         sendFile = sendFile.slice(range.start, range.end + 1);
 
-        resHeaders[responsePrefix + 'Content-Range'] = `bytes ${range.start}-${range.end}/${originalSize}`;
+        resHeaders['Pb-Content-Range'] = `bytes ${range.start}-${range.end}/${originalSize}`;
         resHeaders['Pb-Status'] = '206';
       }
 
-      resHeaders[responsePrefix + 'Accept-Ranges'] = 'bytes';
-      resHeaders[responsePrefix + 'Content-Length'] = `${sendFile.size}`;
+      resHeaders['Pb-Accept-Ranges'] = 'bytes';
+      resHeaders['Pb-Content-Length'] = `${sendFile.size}`;
 
-      const fileUrl = this.server + '/' + randChan + '?responder=true';
       const fileResponse = await fetch(fileUrl, {
         method: 'POST',
         body: sendFile,
