@@ -1,11 +1,18 @@
 class Hoster {
-  constructor(server, rootChannel) {
+  constructor(server, rootChannel, options) {
     this.server = server;
     this.rootChannel = rootChannel;
 
     this.files = {};
 
-    for (let i = 0; i < 1; i++) {
+    let numWorkers = 4;
+    if (options) {
+      if (options && options.numWorkers) {
+        numWorkers = options.numWorkers;
+      }
+    }
+
+    for (let i = 0; i < numWorkers; i++) {
       this.hostFileWorker(i);
     }
   }
@@ -16,8 +23,6 @@ class Hoster {
 
   async hostFileWorker(workerId) {
 
-    console.log(`Starting worker ${workerId}`);
-
     while (true) {
 
       const switchUrl = this.server + '/res' + this.rootChannel + '?switch=true';
@@ -27,6 +32,10 @@ class Hoster {
         method: 'POST',
         body: randChan,
       });
+
+      //if (response.status < 200 || response.status > 299) {
+      //  continue;
+      //}
 
       let reqMethod;
       let reqPath;
@@ -45,7 +54,7 @@ class Hoster {
         }
       }
 
-      console.log(reqMethod, reqPath, reqHeaders);
+      console.log(workerId, reqMethod, reqPath, reqHeaders);
 
       let sendFile = this.files[reqPath];
 
@@ -56,7 +65,6 @@ class Hoster {
 
         resHeaders['Pb-Status'] = '404';
 
-        console.error("404");
         await fetch(fileUrl, {
           method: 'POST',
           body: "Not found",
@@ -83,30 +91,52 @@ class Hoster {
 
         const originalSize = sendFile.size;
 
+        console.log(sendFile.size, range);
         sendFile = sendFile.slice(range.start, range.end + 1);
 
-        resHeaders['Pb-Content-Range'] = `bytes ${range.start}-${range.end}/${originalSize}`;
+        resHeaders['Pb-H-Content-Range'] = `bytes ${range.start}-${range.end}/${originalSize}`;
+        resHeaders['Pb-H-Content-Length'] = range.end - range.start + 1;
         resHeaders['Pb-Status'] = '206';
       }
+      else {
+        resHeaders['Pb-H-Content-Length'] = `${sendFile.size}`;
+      }
 
-      resHeaders['Pb-Accept-Ranges'] = 'bytes';
-      resHeaders['Pb-Content-Length'] = `${sendFile.size}`;
+      resHeaders['Pb-H-Accept-Ranges'] = 'bytes';
 
-      const fileResponse = await fetch(fileUrl, {
-        method: 'POST',
-        body: sendFile,
-        headers: resHeaders,
+      console.log(resHeaders);
+
+      await new Promise((resolve, reject) => {
+
+        const XHR_STATE_DONE = 4;
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', fileUrl + '?register-pulse=true');
+        for (const header in resHeaders) {
+          xhr.setRequestHeader(header, resHeaders[header]);
+        }
+        xhr.send(sendFile);
+
+        fetch(fileUrl + '?check-pulse=true', {
+          mode: 'no-cors',
+        })
+        .then(r => {
+          console.log("request done");
+          if (xhr.readyState !== XHR_STATE_DONE) {
+            xhr.abort();
+          }
+          resolve();
+        })
+        .catch(e => {
+          console.error(e);
+        });
       });
-
-      console.log(`${switchUrl} served from worker ${workerId}`);
-
-      const text = await fileResponse.text();
     }
   }
 }
 
-function createHoster(server, rootChannel) {
-  return new Hoster(server, rootChannel);
+function createHoster(server, rootChannel, options) {
+  return new Hoster(server, rootChannel, options);
 }
 
 function randomChannelId() {
