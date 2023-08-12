@@ -26,6 +26,10 @@ class Hoster {
     while (true) {
 
       const randChan = genRandomKey(32);
+      // TODO: test the following CORS mitigation technique. Seems risky. I
+      // think if requests are canceled you might end up getting the wrong
+      // response.
+      //const randChan = this.rootChannel + '-worker' + workerId;
       const switchUrl = this.server + '/' + this.rootChannel + `?responder=true&switch_to=${randChan}`;
 
       const response = await fetch(switchUrl, {
@@ -53,8 +57,6 @@ class Hoster {
           reqHeaders[headerName.slice('pb-h-'.length)] = entry[1];
         }
       }
-
-      console.log(workerId, reqMethod, reqPath, reqHeaders);
 
       const filePath = reqPath.slice(('/' + this.rootChannel).length);
       let sendFile = this.files[filePath];
@@ -92,7 +94,6 @@ class Hoster {
 
         const originalSize = sendFile.size;
 
-        console.log(sendFile.size, range);
         sendFile = sendFile.slice(range.start, range.end + 1);
 
         resHeaders['Pb-H-Content-Range'] = `bytes ${range.start}-${range.end}/${originalSize}`;
@@ -104,8 +105,6 @@ class Hoster {
       }
 
       resHeaders['Pb-H-Accept-Ranges'] = 'bytes';
-
-      console.log(resHeaders);
 
       await fetch(fileUrl, {
         method: 'POST',
