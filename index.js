@@ -30,7 +30,7 @@ class Hoster {
       // think if requests are canceled you might end up getting the wrong
       // response.
       //const randChan = this.rootChannel + '-worker' + workerId;
-      const switchUrl = this.server + '/' + this.rootChannel + `?responder=true&switch_to=${randChan}`;
+      const switchUrl = this.server + '/' + this.rootChannel + `?responder=true&switch-to=${randChan}`;
 
       const response = await fetch(switchUrl, {
         method: 'POST',
