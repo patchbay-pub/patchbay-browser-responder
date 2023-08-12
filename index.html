@@ -14,14 +14,16 @@
     </div>
     <script type='module'>
 
-      import { createHoster } from './index.js';
+      import { createHoster, genRandomKey } from './index.js';
 
       (async () => {
         //const server = 'http://localhost:9001';
         //const server = 'https://patchbay.iobio.io';
         const server = 'https://pbtest.apitman.com';
-        const rootChannel = 'test';
-        const hoster = createHoster(server, rootChannel, { numWorkers: 8 });
+        const rootChannel = genRandomKey(8);
+        const hoster = createHoster(server, rootChannel, { numWorkers: 4 });
+
+        console.log(server + "/" + rootChannel);
 
         const uploadButton = document.getElementById('file_button');
         uploadButton.addEventListener('change', (e) => {
@@ -38,7 +40,7 @@
           //const fullPath = hoster.getHostedPath(path);
           //const portStr = hoster.getPortStr();
           //const url = `${window.location.protocol}//${proxyAddress}${portStr}${fullPath}`;
-          const url = server + rootChannel + path;
+          const url = server + "/" + rootChannel + path;
           if (allUrls.indexOf(url) === -1) {
             allUrls.push(url);
             const filesEl = document.getElementById('hosted_files');

@@ -61,17 +61,17 @@ class Hoster {
       const filePath = reqPath.slice(('/' + this.rootChannel).length);
       let sendFile = this.files[filePath];
 
-      const fileUrl = this.server + '/' + randChan + '?responder=true';
-      const resHeaders = {};
+
+      const fileUrl = new URL(randChan, this.server);
+      fileUrl.searchParams.append('responder', true);
 
       if (!sendFile) {
 
-        resHeaders['Pb-Status'] = '404';
+        fileUrl.searchParams.append('pb-status', 404);
 
         await fetch(fileUrl, {
           method: 'POST',
           body: "Not found",
-          headers: resHeaders,
         });
 
         continue;
@@ -96,19 +96,18 @@ class Hoster {
 
         sendFile = sendFile.slice(range.start, range.end + 1);
 
-        resHeaders['Pb-H-Content-Range'] = `bytes ${range.start}-${range.end}/${originalSize}`;
-        resHeaders['Pb-H-Content-Length'] = range.end - range.start + 1;
-        resHeaders['Pb-Status'] = '206';
+        fileUrl.searchParams.append('pb-h-content-range', `bytes ${range.start}-${range.end}/${originalSize}`);
+        fileUrl.searchParams.append('pb-h-content-length', range.end - range.start + 1);
+        fileUrl.searchParams.append('pb-status', 206);
       }
       else {
-        resHeaders['Pb-H-Content-Length'] = `${sendFile.size}`;
+        fileUrl.searchParams.append('pb-h-content-length', `${sendFile.size}`);
       }
 
-      resHeaders['Pb-H-Accept-Ranges'] = 'bytes';
+      fileUrl.searchParams.append('pb-h-accept-ranges', 'bytes');
 
       await fetch(fileUrl, {
         method: 'POST',
-        headers: resHeaders,
         body: sendFile,
       });
     }
