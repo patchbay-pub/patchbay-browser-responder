@@ -37,9 +37,9 @@ class Hoster {
         body: randChan,
       });
 
-      //if (response.status < 200 || response.status > 299) {
-      //  continue;
-      //}
+      if (response.status < 200 || response.status > 299) {
+        continue;
+      }
 
       let reqMethod;
       let reqPath;
