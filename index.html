@@ -18,8 +18,9 @@
 
       (async () => {
         //const server = 'http://localhost:9001';
-        const server = 'https://patchbay.iobio.io';
-        const rootChannel = '/test';
+        //const server = 'https://patchbay.iobio.io';
+        const server = 'https://pbtest.apitman.com';
+        const rootChannel = 'test';
         const hoster = createHoster(server, rootChannel, { numWorkers: 8 });
 
         const uploadButton = document.getElementById('file_button');

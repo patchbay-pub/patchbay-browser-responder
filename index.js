@@ -25,8 +25,8 @@ class Hoster {
 
     while (true) {
 
-      const switchUrl = this.server + '/res' + this.rootChannel + '?switch=true';
-      const randChan = randomChannelId();
+      const randChan = genRandomKey(32);
+      const switchUrl = this.server + '/' + this.rootChannel + `?responder=true&switch_to=${randChan}`;
 
       const response = await fetch(switchUrl, {
         method: 'POST',
@@ -56,9 +56,10 @@ class Hoster {
 
       console.log(workerId, reqMethod, reqPath, reqHeaders);
 
-      let sendFile = this.files[reqPath];
+      const filePath = reqPath.slice(('/' + this.rootChannel).length);
+      let sendFile = this.files[filePath];
 
-      const fileUrl = this.server + '/res/' + randChan;
+      const fileUrl = this.server + '/' + randChan + '?responder=true';
       const resHeaders = {};
 
       if (!sendFile) {
@@ -106,30 +107,10 @@ class Hoster {
 
       console.log(resHeaders);
 
-      await new Promise((resolve, reject) => {
-
-        const XHR_STATE_DONE = 4;
-
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', fileUrl + '?register-pulse=true');
-        for (const header in resHeaders) {
-          xhr.setRequestHeader(header, resHeaders[header]);
-        }
-        xhr.send(sendFile);
-
-        fetch(fileUrl + '?check-pulse=true', {
-          mode: 'no-cors',
-        })
-        .then(r => {
-          console.log("request done");
-          if (xhr.readyState !== XHR_STATE_DONE) {
-            xhr.abort();
-          }
-          resolve();
-        })
-        .catch(e => {
-          console.error(e);
-        });
+      await fetch(fileUrl, {
+        method: 'POST',
+        headers: resHeaders,
+        body: sendFile,
       });
     }
   }
@@ -139,12 +120,12 @@ function createHoster(server, rootChannel, options) {
   return new Hoster(server, rootChannel, options);
 }
 
-function randomChannelId() {
+function genRandomKey(len) {
   const possible = "0123456789abcdefghijkmnpqrstuvwxyz";
 
   function genCluster() {
     let cluster = "";
-    for (let i = 0; i < 32; i++) {
+    for (let i = 0; i < len; i++) {
       const randIndex = Math.floor(Math.random() * possible.length);
       cluster += possible[randIndex];
     }
@@ -162,4 +143,5 @@ function randomChannelId() {
 
 export {
   createHoster,
+  genRandomKey,
 };
