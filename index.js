@@ -5,15 +5,15 @@ class Hoster {
 
     this.files = {};
 
-    let numWorkers = 4;
-    if (options) {
-      if (options && options.numWorkers) {
-        numWorkers = options.numWorkers;
-      }
-    }
+    this.numWorkers = 0;
+    this.numWaitingWorkers = 0;
+    setInterval(() => {
+      console.log(this.numWaitingWorkers, this.numWorkers);
+    }, 1000);
 
-    for (let i = 0; i < numWorkers; i++) {
-      this.hostFileWorker(i);
+    this.targetNumWaitingWorkers = 2;
+    for (let i = 0; i < this.targetNumWaitingWorkers; i++) {
+      this.hostFileWorker();
     }
   }
 
@@ -22,6 +22,8 @@ class Hoster {
   }
 
   async hostFileWorker(workerId) {
+
+    this.numWorkers++;
 
     while (true) {
 
@@ -32,10 +34,22 @@ class Hoster {
       //const randChan = this.rootChannel + '-worker' + workerId;
       const switchUrl = this.server + '/' + this.rootChannel + `?responder=true&switch-to=${randChan}`;
 
+      if (this.numWaitingWorkers >= this.targetNumWaitingWorkers) {
+        // exit this worker
+        break;
+      }
+      this.numWaitingWorkers++;
+
       const response = await fetch(switchUrl, {
         method: 'POST',
         body: randChan,
       });
+
+      this.numWaitingWorkers--;
+      if (this.numWaitingWorkers < this.targetNumWaitingWorkers) {
+        // start a new worker
+        this.hostFileWorker();
+      }
 
       if (response.status < 200 || response.status > 299) {
         continue;
@@ -109,8 +123,14 @@ class Hoster {
       await fetch(fileUrl, {
         method: 'POST',
         body: sendFile,
+        headers: {
+          'Content-Type': 'text/plain',
+        }
       });
+
     }
+
+    this.numWorkers--;
   }
 }
 

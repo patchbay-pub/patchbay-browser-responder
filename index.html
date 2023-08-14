@@ -21,7 +21,7 @@
         //const server = 'https://patchbay.iobio.io';
         const server = 'https://pbtest.apitman.com';
         const rootChannel = genRandomKey(8);
-        const hoster = createHoster(server, rootChannel, { numWorkers: 4 });
+        const hoster = createHoster(server, rootChannel);
 
         console.log(server + "/" + rootChannel);
 
