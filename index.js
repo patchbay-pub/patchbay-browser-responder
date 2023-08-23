@@ -1,7 +1,7 @@
 class Hoster {
-  constructor(server, rootChannel, options) {
-    this.server = server;
-    this.rootChannel = rootChannel;
+  constructor(options) {
+    this.server = options.proxyAddress;
+    this.rootChannel = options.rootChannel;
 
     this.files = {};
 
@@ -17,8 +17,8 @@ class Hoster {
     }
   }
 
-  async hostFile(file, path) {
-    this.files[path] = file;
+  async hostFile(options) {
+    this.files[options.path] = options.file;
   }
 
   async hostFileWorker(workerId) {
@@ -172,8 +172,8 @@ class Hoster {
   }
 }
 
-function createHoster(server, rootChannel, options) {
-  return new Hoster(server, rootChannel, options);
+function createHoster(options) {
+  return new Hoster(options);
 }
 
 function genRandomKey(len) {

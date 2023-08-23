@@ -21,7 +21,7 @@
         //const server = 'https://patchbay.iobio.io';
         const server = 'https://pbmarth.apitman.com';
         const rootChannel = genRandomKey(8);
-        const hoster = createHoster(server, rootChannel);
+        const hoster = createHoster({ proxyAddress: server, rootChannel });
 
         console.log(server + "/" + rootChannel);
 
@@ -39,7 +39,7 @@
             const allUrls = [];
 
             const path = '/' + file.name;
-            hoster.hostFile(file, path);
+            hoster.hostFile({ path, file });
             const filesEl = document.getElementById('hosted_files');
             //const fullPath = hoster.getHostedPath(path);
             //const portStr = hoster.getPortStr();
