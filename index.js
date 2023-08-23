@@ -25,7 +25,14 @@ class Hoster {
 
     this.numWorkers++;
 
+    let numWaitFails = 0;
+
     while (true) {
+
+      if (this.numWaitingWorkers >= this.targetNumWaitingWorkers) {
+        // exit this worker
+        break;
+      }
 
       const randChan = genRandomKey(32);
       // TODO: test the following CORS mitigation technique. Seems risky. I
@@ -34,25 +41,41 @@ class Hoster {
       //const randChan = this.rootChannel + '-worker' + workerId;
       const switchUrl = this.server + '/' + this.rootChannel + `?responder=true&switch-to=${randChan}`;
 
-      if (this.numWaitingWorkers >= this.targetNumWaitingWorkers) {
-        // exit this worker
-        break;
-      }
+      let failed = false;
+      let response = null;
+
       this.numWaitingWorkers++;
+      try {
+        response = await fetch(switchUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+          },
+          body: randChan,
+        });
 
-      const response = await fetch(switchUrl, {
-        method: 'POST',
-        body: randChan,
-      });
+        numWaitFails = 0;
+      }
+      catch (e) {
+        console.error(e);
 
+        numWaitFails++;
+
+        if (numWaitFails >= 3) {
+          await sleep(3000);
+        }
+
+        failed = true;
+      }
       this.numWaitingWorkers--;
+
+      if (failed || response.status < 200 || response.status > 299) {
+        continue;
+      }
+
       if (this.numWaitingWorkers < this.targetNumWaitingWorkers) {
         // start a new worker
         this.hostFileWorker();
-      }
-
-      if (response.status < 200 || response.status > 299) {
-        continue;
       }
 
       let reqMethod;
@@ -72,6 +95,8 @@ class Hoster {
         }
       }
 
+      console.log(reqMethod, reqPath, reqHeaders);
+
       const filePath = reqPath.slice(('/' + this.rootChannel).length);
       let sendFile = this.files[filePath];
 
@@ -83,10 +108,18 @@ class Hoster {
 
         fileUrl.searchParams.append('pb-status', 404);
 
-        await fetch(fileUrl, {
-          method: 'POST',
-          body: "Not found",
-        });
+        try {
+          await fetch(fileUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'text/plain',
+            },
+            body: "Not found",
+          });
+        }
+        catch (e) {
+          console.error(e);
+        }
 
         continue;
       }
@@ -120,14 +153,19 @@ class Hoster {
 
       fileUrl.searchParams.append('pb-h-accept-ranges', 'bytes');
 
-      await fetch(fileUrl, {
-        method: 'POST',
-        body: sendFile,
-        headers: {
-          'Content-Type': 'text/plain',
-        }
-      });
-
+      try {
+        await fetch(fileUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain',
+          },
+          body: sendFile,
+        });
+      }
+      catch (e) {
+        // TODO: Maybe implement some retries?
+        console.error(e);
+      }
     }
 
     this.numWorkers--;
@@ -157,6 +195,12 @@ function genRandomKey(len) {
   //id += '-';
   //id += genCluster();
   return id;
+}
+
+async function sleep(timeMs) {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, timeMs);
+  });
 }
 
 export {

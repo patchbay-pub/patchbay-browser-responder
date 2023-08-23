@@ -8,7 +8,7 @@
   </head>
 
   <body>
-    <input id='file_button' type='file'></input>
+    <input id='file_button' type='file' multiple></input>
     <div id='hosted_files'>
       <h1>Hosted Files</h1>
     </div>
@@ -19,7 +19,7 @@
       (async () => {
         //const server = 'http://localhost:9001';
         //const server = 'https://patchbay.iobio.io';
-        const server = 'https://pbtest.apitman.com';
+        const server = 'https://pbmarth.apitman.com';
         const rootChannel = genRandomKey(8);
         const hoster = createHoster(server, rootChannel);
 
@@ -27,44 +27,49 @@
 
         const uploadButton = document.getElementById('file_button');
         uploadButton.addEventListener('change', (e) => {
-          const file = e.target.files[0];
-          if (!file) {
+
+          const files = e.target.files;
+
+          if (files.length < 1) {
             return;
           }
 
-          const allUrls = [];
+          for (const file of files) {
 
-          const path = '/' + file.name;
-          hoster.hostFile(file, path);
-          const filesEl = document.getElementById('hosted_files');
-          //const fullPath = hoster.getHostedPath(path);
-          //const portStr = hoster.getPortStr();
-          //const url = `${window.location.protocol}//${proxyAddress}${portStr}${fullPath}`;
-          const url = server + "/" + rootChannel + path;
-          if (allUrls.indexOf(url) === -1) {
-            allUrls.push(url);
+            const allUrls = [];
+
+            const path = '/' + file.name;
+            hoster.hostFile(file, path);
             const filesEl = document.getElementById('hosted_files');
-            const div = document.createElement('div');
-            div.style.fontSize = '22px';
-            div.style.fontWeight = 'bold';
-            div.innerHTML = `<a target='_blank' href=${url}>${url}</a>`;
-            filesEl.appendChild(div);
-          //  const samtoolsDiv = document.createElement('div');
-          //  samtoolsDiv.style.fontSize = '22px';
-          //  samtoolsDiv.style.fontWeight = 'bold';
-          //  samtoolsDiv.innerHTML = `samtools view -H ${url}`;
-          //  filesEl.appendChild(samtoolsDiv);
-          //  const rangedDiv = document.createElement('div');
-          //  rangedDiv.style.fontSize = '22px';
-          //  rangedDiv.style.fontWeight = 'bold';
-          //  rangedDiv.innerHTML = `samtools view ${url} chr18`;
-          //  filesEl.appendChild(rangedDiv);
-          //  const curlDiv = document.createElement('div');
-          //  curlDiv.style.fontSize = '22px';
-          //  curlDiv.style.fontWeight = 'bold';
-          //  //curlDiv.innerHTML = `curl -H "Range: bytes=1-6" ${url} > file.bam`;
-          //  curlDiv.innerHTML = `curl ${url} > file.bam`;
-          //  filesEl.appendChild(curlDiv);
+            //const fullPath = hoster.getHostedPath(path);
+            //const portStr = hoster.getPortStr();
+            //const url = `${window.location.protocol}//${proxyAddress}${portStr}${fullPath}`;
+            const url = server + "/" + rootChannel + path;
+            if (allUrls.indexOf(url) === -1) {
+              allUrls.push(url);
+              const filesEl = document.getElementById('hosted_files');
+              const div = document.createElement('div');
+              div.style.fontSize = '22px';
+              div.style.fontWeight = 'bold';
+              div.innerHTML = `<a target='_blank' href=${url}>${url}</a>`;
+              filesEl.appendChild(div);
+            //  const samtoolsDiv = document.createElement('div');
+            //  samtoolsDiv.style.fontSize = '22px';
+            //  samtoolsDiv.style.fontWeight = 'bold';
+            //  samtoolsDiv.innerHTML = `samtools view -H ${url}`;
+            //  filesEl.appendChild(samtoolsDiv);
+            //  const rangedDiv = document.createElement('div');
+            //  rangedDiv.style.fontSize = '22px';
+            //  rangedDiv.style.fontWeight = 'bold';
+            //  rangedDiv.innerHTML = `samtools view ${url} chr18`;
+            //  filesEl.appendChild(rangedDiv);
+            //  const curlDiv = document.createElement('div');
+            //  curlDiv.style.fontSize = '22px';
+            //  curlDiv.style.fontWeight = 'bold';
+            //  //curlDiv.innerHTML = `curl -H "Range: bytes=1-6" ${url} > file.bam`;
+            //  curlDiv.innerHTML = `curl ${url} > file.bam`;
+            //  filesEl.appendChild(curlDiv);
+            }
           }
         });
       })();
